@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: sefs-db
+    restart: always
+    environment:
+      POSTGRES_USER: sefs_user
+      POSTGRES_PASSWORD: sefs_password
+      POSTGRES_DB: sefs_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: sefs-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://sefs_user:sefs_password@db:5432/sefs_db
+      - FERNET_KEY=MOCK_FERNET_KEY_CHANGE_ME_IN_PRODUCTION_b1A=
+    volumes:
+      - ./backend/storage:/app/storage
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sefs-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+volumes:
+  postgres_data:
